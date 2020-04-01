@@ -1,0 +1,49 @@
+{
+  "name": "dorcas/modules-people-approval",
+  "description": "Dorcas Hub People Approval Module",
+  "type": "library",
+  "license": "GPL-3.0-or-later",
+  "authors": [{
+    "name": "Ayotomide Aina",
+    "email": "ayotomideaina@gmail.com"
+  }],
+  "require": {
+    "php": "^7.1.3",
+    "aws/aws-sdk-php": "^3.74",
+    "guzzlehttp/guzzle": "^6.3",
+    "laravel/framework": "^5.5",
+    "stillat/numeral.php": "^2.0"
+
+  },
+  "require-dev": {
+    "phpunit/phpunit": "^7.5"
+  },
+  "config": {
+    "optimize-autoloader": true,
+    "sort-packages": true
+  },
+  "autoload": {
+    "psr-4": {
+      "Dorcas\\ModulesPeopleApproval\\": "src/"
+    }
+  },
+  "extra": {
+    "laravel": {
+      "providers": [
+        "Dorcas\\ModulesPeopleApproval\\ModulesPeopleApprovalServiceProvider"
+      ]
+    }
+  },
+  "minimum-stability": "dev",
+  "prefer-stable": true,
+  "scripts": {
+    "post-install-cmd": [
+      "...",
+      "php artisan vendor:publish --tag=public --force"
+    ],
+    "post-update-cmd": [
+      "...",
+      "php artisan vendor:publish --tag=public --force"
+    ]
+  }
+}
