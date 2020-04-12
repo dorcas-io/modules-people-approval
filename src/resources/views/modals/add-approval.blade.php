@@ -14,12 +14,23 @@
                                 <input class="form-control" id="approval" v-model="form_data.title" placeholder="Enter Approval Title " type="text" required>
                             </div>
                             <div class="form-group col-md-12">
-                                <label class="form-label" for="transaction">Select Approval Scope</label>
+                                <label class="form-label" for="transaction">Select  Scope</label>
                                 <select   class="form-control custom-select selectized" tabindex="-1"  v-model="form_data.scope_type" required >
                                     <option selected :value="null" disabled>Select Scope </option>
                                     <option value="min_number" > Minimum Number of People</option>
-                                    <option value="key_person" > Key Person Approval</option>
+                                    <option value="key_person" > Critical Person Approval</option>
                                     <option value="both" > Both Minimum Number and Critical </option>
+                                </select>
+
+                            </div>
+
+                            <div class="form-group col-md-12">
+                                <p>Choose How you want the approvals to be delivered to appropriate Authorities</p>
+                                <label class="form-label" for="transaction">Select  Frequency </label>
+                                <select   class="form-control custom-select selectized" tabindex="-1"  v-model="form_data.frequency_type" required >
+                                    <option selected :value="undefined" disabled>Select Frequency </option>
+                                    <option value="sequential" >Sequential </option>
+                                    <option value="random" >Random</option>
                                 </select>
 
                             </div>
