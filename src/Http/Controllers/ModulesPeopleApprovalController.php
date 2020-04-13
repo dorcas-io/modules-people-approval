@@ -35,6 +35,7 @@ class ModulesPeopleApprovalController extends Controller
             $this->setViewUiResponse($request);
             $this->data['args'] = $request->query->all();
             $this->data['approvals'] = $this->getPeopleApprovals($sdk);
+            $this->data['requests'] = $this->getRequests($sdk);
             switch ($this->data){
                 case !empty($this->data['approvals']):
                     $this->data['submenuAction'] .= '
@@ -229,7 +230,6 @@ class ModulesPeopleApprovalController extends Controller
         }
     }
 
-
     public function deleteAuthorizer(Request $request, Sdk $sdk){
         try{
             $resource = $sdk->createApprovalsResource()
@@ -260,8 +260,8 @@ class ModulesPeopleApprovalController extends Controller
         # get the company
 
         $response = $sdk->createApprovalsResource()
-            ->addQueryArgument('limit', 10000)
-            ->send('get', ['requests']);
+            ->addQueryArgument('user_id', auth()->user()->id)
+            ->send('get', ['requests','authorizer']);
         if (!$response->isSuccessful()) {
             return null;
         }
@@ -271,111 +271,73 @@ class ModulesPeopleApprovalController extends Controller
         return $response;
     }
 
-    public function approvalRequests(Request $request, Sdk $sdk){
+    private function getSingleRequest(Sdk $sdk,string $id){
+        $sdk = $sdk ?: app(Sdk::class);
+        $company = auth()->user()->company(true, true);
+        # get the company
+
+        $response = $sdk->createApprovalsResource()
+            ->send('get', ['requests',$id]);
+        if (!$response->isSuccessful()) {
+            return null;
+        }
+        return $response->getData(true);
+    }
+
+
+    public function approvalRequestForm(Request $request, Sdk $sdk,string $id)
+    {
         try {
-            if(auth()->user()->is_employee === 1){
-                return response(view('errors.404'), 404);
-            }
-            $response = $sdk->createApprovalsResource()->send('get',['requests']);
-            if(!$response->isSuccessful()){
-                throw new RecordNotFoundException($response->errors[0]['title'] ?? 'Could not find the requests');
-            }
-            $this->data['page']['title'] .= ' &rsaquo; Approval Requests';
-            $this->data['header']['title'] = ' People Approval Requests';
             $this->data['submenuAction'] = '';
+            $this->data['selectedSubMenu'] = 'people-payroll-approvals';
             $this->setViewUiResponse($request);
+            if ($this->getSingleRequest($sdk,$id) === null){
+                $error = (tabler_ui_html_response(['Could not Load View for this approval ']))->setType(UiResponse::TYPE_ERROR);
+                return redirect()->route('approval-main')->with('UiResponse', $error);
+            }
+            $leaveRequest = $this->getSingleRequest($sdk,$id);
+            $this->data['request'] = $leaveRequest;
+            $this->data['request_id'] = $leaveRequest->id;
             $this->data['args'] = $request->query->all();
-            $this->data['requests'] = $this->getRequests($sdk);
+            $this->data['page']['title'] .= ' &rsaquo; Approval Requests';
+            $this->data['header']['title'] = $leaveRequest->model_data['request_type'];
             return view('modules-people-approval::Requests/index', $this->data);
+        }
+        catch (\Exception $e){
+            dd($e);
+            $this->setViewUiResponse($request);
+            return redirect()->route('approval-main');
 
+        }
+
+    }
+
+    public function requestAction(Request $request, Sdk $sdk){
+        try{
+            $resource = $sdk->createApprovalsResource();
+            $resource = $resource->addBodyParam('request_id',$request->request_id)
+                ->addBodyParam('user_id',$request->user_id)
+                ->addBodyParam('status',$request->status);
+
+            if ($request->input('rejection_comment')){
+                $resource->addBodyParam('rejection_comment',$request->rejection_comment);
+            }
+            $response = $resource->send('post',['requests']);
+            if (!$response->isSuccessful()) {
+                $message = $response->errors[0]['title'] ?? '';
+                $error = (tabler_ui_html_response([$message]))->setType(UiResponse::TYPE_ERROR);
+                return redirect()->route('view-request',['id'=>$request->request_id])->with('UiResponse', $error);
+
+            }
+            $message = (tabler_ui_html_response(['Action Recorded Successfully']))->setType(UiResponse::TYPE_SUCCESS);
+            return redirect()->route('approval-main')->with('UiResponse', $message);
 
         }
         catch (\Exception $e){
-            $this->setViewUiResponse($request);
-            return view('modules-people-approval::index', $this->data);
-
-        }
-    }
-
-
-    public function searchRequests(Request $request, Sdk $sdk){
-        $search = $request->query('search', '');
-        $offset = (int) $request->query('offset', 0);
-        $limit = (int) $request->query('limit', 10);
-
-        # get the request parameters
-        $path = ['requests'];
-
-        $query = $sdk->createApprovalsResource();
-        $query = $query->addQueryArgument('limit', $limit)
-            ->addQueryArgument('page', get_page_number($offset, $limit));
-        if (!empty($search)) {
-            $query = $query->addQueryArgument('search', $search);
-        }
-        $response = $query->send('get', $path);
-        # make the request
-        if (!$response->isSuccessful()) {
-            // do something here
-            throw new RecordNotFoundException($response->errors[0]['title'] ?? 'Could not find any matching Request.');
-        }
-        $this->data['total'] = $response->meta['pagination']['total'] ?? 0;
-        # set the total
-        $this->data['rows'] = $response->data;
-        # set the data
-        return response()->json($this->data);
-    }
-
-    public function authorizerRequests(Request $request, Sdk $sdk){
-        try {
-
-            $resource =  $sdk->createApprovalsResource()
-                ->addQueryArgument('authorizer_id',auth()->user()->id);
-           $response =  $resource->send('get',['requests','authorizer','approvals']);
-            $this->data['page']['title'] .= ' &rsaquo; Approval Requests';
-            $this->data['header']['title'] = ' People Approval Requests';
-            $this->data['submenuAction'] = '';
-            $this->setViewUiResponse($request);
-            $this->data['args'] = $request->query->all();
-            $this->data['authorizer_approvals'] = $response->getData();
-            return view('modules-people-approval::Requests/authorizer_index', $this->data);
+            return response()->json(['message'=>$e->getMessage()],400);
 
 
         }
-        catch (\Exception $e){
-            $this->setViewUiResponse($request);
-            return view('modules-people-approval::Requests/authorizer_index', $this->data);
-
-        }
-    }
-
-
-    public function searchAuthorizerRequests(Request $request, Sdk $sdk){
-        $search = $request->query('search', '');
-        $offset = (int) $request->query('offset', 0);
-        $limit = (int) $request->query('limit', 10);
-
-        # get the request parameters
-        $path = ['requests','authorizer'];
-
-        $query = $sdk->createApprovalsResource();
-        $query = $query
-            ->addQueryArgument('limit', $limit)
-            ->addQueryArgument('authorizer_id',auth()->user()->id)
-            ->addQueryArgument('page', get_page_number($offset, $limit));
-        if (!empty($search)) {
-            $query = $query->addQueryArgument('search', $search);
-        }
-        $response = $query->send('get', $path);
-        # make the request
-        if (!$response->isSuccessful()) {
-            // do something here
-            throw new RecordNotFoundException($response->errors[0]['title'] ?? 'Could not find any matching Request.');
-        }
-        $this->data['total'] = $response->meta['pagination']['total'] ?? 0;
-        # set the total
-        $this->data['rows'] = $response->data;
-        # set the data
-        return response()->json($this->data);
     }
 
 

@@ -12,12 +12,8 @@ Route::group(['namespace' => 'Dorcas\ModulesPeopleApproval\Http\Controllers', 'm
      Route::post('approval/authorizer/create', 'ModulesPeopleApprovalController@createAuthorizer')->name('authorizer-create');
     Route::post('approval/authorizer', 'ModulesPeopleApprovalController@deleteAuthorizer')->name('authorizer-delete');
 
-
-
-    Route::get('approval/requests/{id}', 'ModulesPeopleApprovalController@approvalRequests')->name('approval-requests');
-    Route::get('approval/requests-search', 'ModulesPeopleApprovalController@searchRequests')->name('search-requests');
-    Route::get('approval/requests-authorizers', 'ModulesPeopleApprovalController@authorizerRequests')->name('approval-request-authorizers');
-    Route::get('approval/authorizers/requests-search', 'ModulesPeopleApprovalController@searchAuthorizerRequests')->name('search-requests-authorizers');
+    Route::get('approval/request/{id}','ModulesPeopleApprovalController@approvalRequestForm')->name('view-request');
+    Route::post('approval/requests','ModulesPeopleApprovalController@requestAction')->name('request-action');
 
 
 });

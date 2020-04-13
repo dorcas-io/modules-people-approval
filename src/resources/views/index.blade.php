@@ -1,6 +1,8 @@
 @extends('layouts.tabler')
 @section('body_content_header_extras')
-
+    <link href="https://unpkg.com/gijgo@1.9.13/css/gijgo.min.css" rel="stylesheet" type="text/css" />
+    <link href="{{cdn('zvendors/Datatable/data-tables.min.css')}}"rel="stylesheet" type="text/css" />
+    <link href="{{cdn('vendors/Datatable/data-tables.checkbox.min.css')}}"rel="stylesheet" type="text/css" />
 @endsection
 
 @section('body_content_main')
@@ -13,12 +15,13 @@
         @include('layouts.blocks.tabler.sub-menu')
         <div class="col-md-9 col-xl-9">
             <div class="row row-cards row-deck " >
-                <a href="#" class="btn btn-primary col-md-2 ml-auto mb-2" data-toggle="modal" data-target="#approval-add-modal"  >
-                    Add  Approval
-                </a>
+
                 @if (auth()->user()->is_employee !== 1)
-                    <div class="col-sm-12" id="approvals">
-                        @if(!empty($approvals))
+
+                    <div class="col-md-12" id="approvals">
+                        <a href="#" class="btn btn-primary  ml-auto mb-2" data-toggle="modal" data-target="#approval-add-modal"  >
+                            Add  Approval
+                        </a>
                             <div class="table-responsive">
                                 <table class="table card-table table-vcenter text-nowrap bootstrap-table"
                                        data-pagination="true"
@@ -45,47 +48,79 @@
                                     </thead>
                                 </table>
                             </div>
-
-                        @else
-                            <div class="col-md-12" >
-                                @component('layouts.blocks.tabler.empty-fullpage')
-                                    @slot('title')
-                                        No Approval  Generated
-                                    @endslot
-                                    <a href="#" class="btn btn-primary" v-on:click.prevent="showApproval">Add Approval </a>
-                                    &nbsp;
-                                    @slot('buttons')
-                                    @endslot
-                                @endcomponent
-
-                            </div>
-                        @endif
                         @include('modules-people-approval::modals.edit-approval')
                         @include('modules-people-approval::.modals.add-approval')
                     </div>
+                    <div class="col-md-12 mt-2" id="requests">
+                        <h3  class="mr-auto mb-2 bold title-block"  >
+                            Requests
+                        </h3>
+                        <div class="table-responsive">
+                            @if ($requests !== null)
+                                <table class="table" id="requests-table" >
+                                    <thead>
+                                    <tr>
+                                        <th>Approval Type</th>
+                                        <th>Date of Request </th>
+                                        <th>Action</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    @foreach($requests as $request)
+
+                                        <tr>
+                                            <td>{{$request->approvals['data'][0]['title']}}</td>
+                                            <td>{{\Carbon\Carbon::parse($request->created_at)->format('D M, Y H:m')}}</td>
+                                            <td>
+                                                <a  href="{{route('view-request',['id'=>$request->id])}}" class="btn btn-primary text-white">View Details</a>
+                                            </td>
+                                        </tr>
+
+                                    @endforeach
+
+                                    </tbody>
+                                </table>
+                            @else
+                                <div class="alert mt-4 alert-warning">No Request Requires Your Approval </div>
+                            @endif
+                        </div>
+                    </div>
+                    @else
+                    <div class="col-md-12 mt-2" id="requests">
+                        <h3  class="mr-auto mb-2 bold title-block"  >
+                            Requests
+                        </h3>
+                        <div class="table-responsive">
+                            @if ($requests !== null)
+                                <table class="table" id="requests-table" >
+                                    <thead>
+                                    <tr>
+                                        <th>Approval Type</th>
+                                        <th>Date of Request </th>
+                                        <th>Action</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    @foreach($requests as $request)
+
+                                        <tr>
+                                            <td>{{$request->approvals['data'][0]['title']}}</td>
+                                            <td>{{\Carbon\Carbon::parse($request->created_at)->format('D M, Y H:m')}}</td>
+                                            <td>
+                                                <a  href="{{route('view-request',['id'=>$request->id])}}" class="btn btn-primary text-white">View Details</a>
+                                            </td>
+                                    </tr>
+
+                                    @endforeach
+
+                                    </tbody>
+                                </table>
+                                @else
+                                <div class="alert mt-4 alert-warning">No Request Requires Your Approval </div>
+                            @endif
+                        </div>
+                    </div>
                 @endif
-{{--                    <div class="col-sm-8">--}}
-{{--                        @component('layouts.blocks.tabler.empty-fullpage')--}}
-{{--                            @slot('title')--}}
-{{--                                 View Your Approval Requests--}}
-{{--                            @endslot--}}
-{{--                            @slot('buttons')--}}
-{{--                            @endslot--}}
-{{--                            <div class="card-body">--}}
-{{--                                <div class="card-text">--}}
-{{--                                    Approval Request: Grant Approvals--}}
-{{--                                </div>--}}
-{{--                            </div>--}}
-{{--                            <div class="row row-cards row-deck">--}}
-{{--                                <div class="col-md-4 mt-4">--}}
-{{--                                    <a href="{{route('approval-request-authorizers')}}" class="btn btn-primary text-white">Approval Request </a>--}}
-
-
-{{--                                </div>--}}
-
-{{--                            </div>--}}
-{{--                        @endcomponent--}}
-{{--                    </div>--}}
             </div>
 
         </div>
@@ -93,9 +128,12 @@
 
 @endsection
 @section('body_js')
+    <script src="{{cdn('vendors/Datatable/data-tables.min.js')}}"></script>
+    <script src="{{cdn('vendors/Datatable/data-tables.checkbox.min.js')}}"></script>
+    <script src="{{cdn('vendors/Datatable/data-tables.bootstrap.min.js')}}"></script>
     <script>
+
         app.currentUser = {!! json_encode($dorcasUser) !!};
-        const table = $('.bootstrap-table');
         let Approval =  new Vue({
             el: '#approvals',
             data:{
@@ -106,6 +144,11 @@
                     frequency_type: null,
                     status: null,
                     approval_id: null,
+                },
+                request_data:{
+                    status:null,
+                    rejection_comment:null,
+                    request_id:null,
                 }
             },
             methods:{
@@ -253,7 +296,7 @@
             },
             mounted(){
             }
-        })
+        });
 
         function processRows(row, index) {
             row.created_at = moment(row.created_at).format('DD MMM, YYYY');
@@ -274,5 +317,14 @@
             // }
             // return row;
         }
+
+        var table = $('#requests-table').DataTable({
+            // 'ajax': '/lab/jquery-datatables-checkboxes/ids-arrays.txt',
+            'select': {
+                'style': 'multi'
+            },
+            'order': [[1, 'asc']]
+        });
+
     </script>
 @endsection
