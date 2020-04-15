@@ -284,10 +284,10 @@ class ModulesPeopleApprovalController extends Controller
         return $response->getData(true);
     }
 
-
     public function approvalRequestForm(Request $request, Sdk $sdk,string $id)
     {
         try {
+
             $this->data['submenuAction'] = '';
             $this->data['selectedSubMenu'] = 'people-payroll-approvals';
             $this->setViewUiResponse($request);
